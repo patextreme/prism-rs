@@ -84,7 +84,7 @@ impl DsaPublicKey for Secp256k1PublicKey {
         Sig: AsRef<[u8]>,
     {
         let secp = secp256k1::Secp256k1::verification_only();
-        let msg = secp256k1::Message::from_slice(sha256(message).as_bytes())
+        let msg = secp256k1::Message::from_digest_slice(sha256(message).as_bytes())
             .map_err(|e| e.to_string())?;
         let sig =
             secp256k1::ecdsa::Signature::from_der(signature.as_ref()).map_err(|e| e.to_string())?;
