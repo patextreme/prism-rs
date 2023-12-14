@@ -7,7 +7,7 @@ use crate::{
 use anyhow::Context;
 use prism_core::{
     crypto::codec::HexStr,
-    dlt::cardano::{NetworkIdentifier, OuraN2NSource},
+    dlt::cardano::OuraN2NSource,
     store::{DltCursor, DltCursorStore},
 };
 use prism_storage::db::PrismDB;
@@ -34,10 +34,10 @@ async fn execute_server(args: &ServerArgs) -> anyhow::Result<()> {
 
     // TODO: support custom network
     let store = do_migrate(&args.db_args).await?;
-    let source = OuraN2NSource::since_persisted_cursor_or_genesis(
+    let source = OuraN2NSource::since_persisted_cursor_or_origin(
         store.clone(),
         cardano_addr,
-        &NetworkIdentifier::Mainnet,
+        &args.cardano_args.network.to_iden(),
     )
     .await
     .context("Unable to create a OuraN2NSource")?;

@@ -116,14 +116,17 @@ mod model {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum NetworkIdentifier {
     Mainnet,
+    PreProd,
 }
 
 impl NetworkIdentifier {
     fn magic_args(&self) -> MagicArg {
         let chain_magic = match self {
             NetworkIdentifier::Mainnet => MagicArg::from_str("mainnet"),
+            NetworkIdentifier::PreProd => MagicArg::from_str("preprod"),
         };
         chain_magic.expect("The chain magic value cannot be parsed")
     }
@@ -131,6 +134,7 @@ impl NetworkIdentifier {
     fn chain_wellknown_info(&self) -> ChainWellKnownInfo {
         match self {
             NetworkIdentifier::Mainnet => ChainWellKnownInfo::mainnet(),
+            NetworkIdentifier::PreProd => ChainWellKnownInfo::preprod(),
         }
     }
 }
@@ -141,17 +145,7 @@ pub struct OuraN2NSource<Store: DltCursorStore + Send + Sync + 'static> {
 }
 
 impl<Store: DltCursorStore + Send + Sync + 'static> OuraN2NSource<Store> {
-    // FIXME: 71482683 was about the slot that first AtalaBlock was observed on mainnet.
-    // How can we support multiple network and define genesis slot / block?
-    pub fn since_genesis(store: Store, remote_addr: &str, chain: &NetworkIdentifier) -> Self {
-        let intersect = oura::sources::IntersectArg::Point(PointArg(
-            71482683,
-            "f3fd56f7e390d4e45d06bb797d83b7814b1d32c2112bc997779e34de1579fa7d".to_string(),
-        ));
-        Self::new(store, remote_addr, chain, intersect)
-    }
-
-    pub async fn since_persisted_cursor_or_genesis(
+    pub async fn since_persisted_cursor_or_origin(
         store: Store,
         remote_addr: &str,
         chain: &NetworkIdentifier,
@@ -171,7 +165,7 @@ impl<Store: DltCursorStore + Send + Sync + 'static> OuraN2NSource<Store> {
             }
             None => {
                 log::info!("Persisted cursor not found, staring syncing from PRISM genesis slot");
-                Ok(Self::since_genesis(store, remote_addr, chain))
+                Ok(Self::new(store, remote_addr, chain, IntersectArg::Origin))
             }
         }
     }

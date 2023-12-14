@@ -1,4 +1,5 @@
-use clap::{Args, Parser, Subcommand};
+use clap::{Args, Parser, Subcommand, ValueEnum};
+use prism_core::dlt::cardano::NetworkIdentifier;
 use std::net::Ipv4Addr;
 
 #[derive(Parser)]
@@ -53,6 +54,24 @@ pub struct CardanoArgs {
         default_value = "relays-new.cardano-mainnet.iohk.io:3001"
     )]
     pub address: String,
+    /// Network config of the connected node
+    #[arg(long, default_value = "mainnet")]
+    pub network: NetworkIdentifierCliEnum,
+}
+
+#[derive(Clone, ValueEnum)]
+pub enum NetworkIdentifierCliEnum {
+    Mainnet,
+    Preprod,
+}
+
+impl NetworkIdentifierCliEnum {
+    pub fn to_iden(&self) -> NetworkIdentifier {
+        match self {
+            NetworkIdentifierCliEnum::Mainnet => NetworkIdentifier::Mainnet,
+            NetworkIdentifierCliEnum::Preprod => NetworkIdentifier::PreProd,
+        }
+    }
 }
 
 #[derive(Args)]
