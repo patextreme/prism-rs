@@ -390,14 +390,11 @@ impl PublicKey {
                 msg: e,
             }
         })?;
-        let data = match (usage, pk) {
-            (KeyUsage::MasterKey, ECPublicKeyAny::Secp256k1(pk)) => {
-                PublicKeyData::Master { data: pk }
-            }
-            (KeyUsage::MasterKey, _) => {
-                Err(PublicKeyParsingError::InvalidMasterKeyType(id.clone()))?
-            }
-            (usage, pk) => PublicKeyData::Other { data: pk, usage },
+        let data = match usage {
+            KeyUsage::MasterKey => match pk {
+                ECPublicKeyAny::Secp256k1(pk) => PublicKeyData::Master { data: pk },
+            },
+            usage => PublicKeyData::Other { data: pk, usage },
         };
 
         Ok(Self { id, data })

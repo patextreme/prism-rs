@@ -1,7 +1,6 @@
 use super::hash::sha256;
 use crate::proto::public_key::KeyData;
 use bytes::{BufMut, Bytes, BytesMut};
-use ed25519_dalek::Verifier;
 use enum_dispatch::enum_dispatch;
 
 #[enum_dispatch]
@@ -21,8 +20,6 @@ pub trait DsaPublicKey {
 #[enum_dispatch(ECPublicKey)]
 pub enum ECPublicKeyAny {
     Secp256k1(Secp256k1PublicKey),
-    Ed25519(Ed25519PublicKey),
-    X25519(X25519PublicKey),
 }
 
 impl ECPublicKeyAny {
@@ -36,8 +33,6 @@ impl ECPublicKeyAny {
             "secp256k1" => Ok(Self::Secp256k1(Secp256k1PublicKey::from_key_data(
                 key_data,
             )?)),
-            "ed25519" => Ok(Self::Ed25519(Ed25519PublicKey::from_key_data(key_data)?)),
-            "x25519" => Ok(Self::X25519(X25519PublicKey::from_key_data(key_data)?)),
             _ => Err(format!("Unsupported curve: {}", curve_name)),
         }
     }
@@ -96,79 +91,5 @@ impl DsaPublicKey for Secp256k1PublicKey {
 
         secp.verify_ecdsa(&msg, &sig, &self.0)
             .map_err(|e| e.to_string())
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Ed25519PublicKey(ed25519_dalek::PublicKey);
-
-impl Ed25519PublicKey {
-    pub fn from_key_data(key_data: &KeyData) -> Result<Self, String> {
-        match key_data {
-            KeyData::EcKeyData(_) => {
-                Err("Ed25519 public key from uncompressed key_data is not supported".to_string())?
-            }
-            KeyData::CompressedEcKeyData(key_data) => {
-                let pk = ed25519_dalek::PublicKey::from_bytes(&key_data.data)
-                    .map_err(|e| e.to_string())?;
-                Ok(Self(pk))
-            }
-        }
-    }
-}
-
-impl ECPublicKey for Ed25519PublicKey {
-    fn curve_name(&self) -> &'static str {
-        "ed25519"
-    }
-
-    fn encode(&self) -> Bytes {
-        Bytes::copy_from_slice(self.0.as_bytes().as_slice())
-    }
-}
-
-impl DsaPublicKey for Ed25519PublicKey {
-    fn verify<Msg, Sig>(&self, message: Msg, signature: Sig) -> Result<(), String>
-    where
-        Msg: AsRef<[u8]>,
-        Sig: AsRef<[u8]>,
-    {
-        let sig =
-            ed25519_dalek::Signature::from_bytes(signature.as_ref()).map_err(|e| e.to_string())?;
-        self.0
-            .verify(message.as_ref(), &sig)
-            .map_err(|e| e.to_string())
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct X25519PublicKey(x25519_dalek::PublicKey);
-
-impl X25519PublicKey {
-    pub fn from_key_data(key_data: &KeyData) -> Result<Self, String> {
-        match key_data {
-            KeyData::EcKeyData(_) => {
-                Err("X25519 public key from uncompressed key_data is not supported".to_string())
-            }
-            KeyData::CompressedEcKeyData(key_data) => {
-                let bytes = <[u8; 32]>::try_from(key_data.data.clone()).map_err(|bytes| {
-                    format!(
-                        "X25519 public key_data must have lenght of 32 bytes. Got {} bytes",
-                        bytes.len()
-                    )
-                })?;
-                Ok(Self(bytes.into()))
-            }
-        }
-    }
-}
-
-impl ECPublicKey for X25519PublicKey {
-    fn curve_name(&self) -> &'static str {
-        "x25519"
-    }
-
-    fn encode(&self) -> Bytes {
-        Bytes::copy_from_slice(self.0.as_bytes().as_slice())
     }
 }

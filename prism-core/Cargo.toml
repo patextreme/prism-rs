@@ -24,12 +24,9 @@ time = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 uriparse = { workspace = true }
 # crypto
-curve25519-dalek = { workspace = true }
-ed25519-dalek = { workspace = true }
 rand = { workspace = true }
 ring = { workspace = true }
 secp256k1 = { workspace = true, features = ["rand"] }
-x25519-dalek = { workspace = true }
 # cardano
 oura = { workspace = true, optional = true }
 
