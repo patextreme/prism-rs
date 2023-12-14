@@ -7,6 +7,7 @@ use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     sync::Arc,
 };
+use tokio::net::TcpListener;
 
 mod handler;
 
@@ -52,10 +53,10 @@ where
             .route("/dids/:didRef", get(handler::get_dids))
             .with_state(self.store);
 
-        let server = axum::Server::bind(&SocketAddr::new(IpAddr::V4(bind), port));
+        let listener = TcpListener::bind(&SocketAddr::new(IpAddr::V4(bind), port)).await?;
 
         log::info!("Starting http server on {}:{}", bind, port);
-        server.serve(app.into_make_service()).await?;
+        axum::serve(listener, app).await?;
         Ok(())
     }
 }
